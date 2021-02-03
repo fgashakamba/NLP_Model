@@ -1,0 +1,32 @@
+---
+title: "NLP Model Development - Milestone Report"
+author: "Faustin GASHAKAMBA"
+date: "2/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = '/Users/HP/Desktop/DS_Capstone/en_US')
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview of the milestone report
+
+The purpose of this report is explain the exploratory analysis steps that were taken to look into the data that will be used to build, train, and test a text prediction app that will developed as part of this capstone project. These steps include the loading of the data, generating summaries on it using graphs and tables, and generating an N-grams model that will be used in the final NLP model.
+Finally, the strategies that will be used in the final algorithm will be outlined and a plan will be presented on how the algorithm will be developed and deployed.
+
+## Loading  the data (Blogs, News, Twitter)
+
+```{r cars}
+blogs <- readLines("en_US.blogs.txt", warn = FALSE, encoding = "UTF-8")
+news <- readLines("en_US.news.txt", warn = FALSE, encoding = "UTF-8")
+twitter <- readLines("en_US.twitter.txt", warn = FALSE, encoding = "UTF-8")
+```
+
+
+
+
+```{r data-loading}
+print("End of file...")
+```
+
