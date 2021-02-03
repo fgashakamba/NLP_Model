@@ -17,16 +17,168 @@ Finally, the strategies that will be used in the final algorithm will be outline
 
 ## Loading  the data (Blogs, News, Twitter)
 
-```{r cars}
+```{r data-loading}
 blogs <- readLines("en_US.blogs.txt", warn = FALSE, encoding = "UTF-8")
 news <- readLines("en_US.news.txt", warn = FALSE, encoding = "UTF-8")
 twitter <- readLines("en_US.twitter.txt", warn = FALSE, encoding = "UTF-8")
 ```
 
+## Generating Data Summaries
 
+As part of the  data cleaning process, a basic summary of the three text corpora is being provided which includes file sizes, number of lines, number of characters, and number of words for each file. Also included are basic statistics on the number of words per line (min, mean, and max).
 
+1. Number of lines, words, and characters in each file
 
-```{r data-loading}
-print("End of file...")
+```{r summary_files}
+library(stringi) # stats files
+# Number of Lines num.lines
+len_blogs <- length(blogs) 
+len_news <- length(news)  
+len_twitter <- length(twitter) 
+# Number of characters
+nchar_blogs <- sum(nchar(blogs))
+nchar_news <- sum(nchar(news))
+nchar_twitter <- sum(nchar(twitter))
+# Counting the Words (num.words)
+nword_blogs <- sum(stri_count_words(blogs)) 
+nword_news <- sum(stri_count_words(news))  
+nword_twitter <-sum(stri_count_words(twitter)) 
+# create table 
+corpus <- data.frame(file.name = c("blogs", "news", "twitter"),
+num.lines = c(formatC(len_blogs,big.mark=","), formatC(len_news,big.mark=","), formatC(len_twitter,big.mark=",")),
+num.character = c(formatC(nchar_blogs, big.mark=","), formatC(nchar_news, big.mark=","), formatC(nchar_twitter,big.mark=",")),
+num.words = c(formatC(nword_blogs, big.mark=","), formatC(nword_news, big.mark=","), formatC(nword_twitter, big.mark=",")))
+head(corpus)
 ```
 
+2. Summary of Words per Line
+
+```{r summary_lines}
+# library(stringr)
+# library(ggplot2)
+# library(gridExtra)
+# line_word_count_blogs <- sapply(blogs, str_count)
+# line_word_count_twitter <- sapply(twitter, str_count)
+# line_word_count_news <- sapply(news, str_count)
+# 
+# blogs_plot <- qplot(line_word_count_blogs,
+#                    geom = "histogram",
+#                    main = "US Blogs",
+#                    xlab = "Words per Line",
+#                    ylab = "Count",
+#                    binwidth = 5)
+# twitter_plot <- qplot(line_word_count_twitter,
+#                    geom = "histogram",
+#                    main = "US Blogs",
+#                    xlab = "Words per Line",
+#                    ylab = "Count",
+#                    binwidth = 5)
+# news_plot <- qplot(line_word_count_news,
+#                    geom = "histogram",
+#                    main = "US Blogs",
+#                    xlab = "Words per Line",
+#                    ylab = "Count",
+#                    binwidth = 5)
+# grid.arrange(blogs_plot, twitter_plot, news_plot,ncol=3)
+```
+ 
+## Sampling and Cleaning the Data
+
+Here, we will remove all non-English characters and then compile a sample dataset that is composed of 1% of each of the 3 original datasets.
+
+```{r sampling}
+set.seed(65432)
+blogs_1 <-iconv(blogs,"latin1","ASCII",sub="")
+news_1 <-iconv(news,"latin1","ASCII",sub="")
+twitter_1 <-iconv(twitter,"latin1","ASCII",sub="")
+# sample data set only 1% of each file
+sample_data <-c(sample(blogs_1,length(blogs_1)*0.01),
+               sample(news_1,length(news_1)*0.01),
+               sample(twitter_1,length(twitter_1)*0.01))
+```
+
+## Cleaning and Building the Corpus
+
+```{r corpus}
+library(tm) # Text mining package
+library(NLP) # Language processing package
+corpus <- VCorpus(VectorSource(sample_data))
+corpus1 <- tm_map(corpus,removePunctuation)
+corpus2 <- tm_map(corpus1,stripWhitespace)
+
+corpus3 <- tm_map(corpus2,tolower) # Convert to lowercase
+corpus4 <- tm_map(corpus3,removeNumbers)
+corpus5 <- tm_map(corpus4,PlainTextDocument)
+
+#removing stop words in English (a, as, at, so, etc.)
+corpus6 <- tm_map(corpus5,removeWords,stopwords("english"))
+```
+
+## Building N-Grams model
+
+An n-gram model is a contiguous sequence of n items from a given sequence of text or speech. Unigrams are single words. Bigrams are two words combinations. Trigrams are three-word combinations.
+
+The following function is used to extract 1-grams, 2-grams, and 3-grams from the text Corpus using RWeka package.
+
+```{r n_grams}
+library(RWeka) # tokenizer - create unigrams, bigrams, trigrams
+# We RWeka package to construct functions that tokenize the sample and construct matrices of uniqrams, bigrams, and trigrams.
+one<-function(x) NGramTokenizer(x,Weka_control(min=1,max=1))
+two<-function(x) NGramTokenizer(x,Weka_control(min=2,max=2))
+thr<-function(x) NGramTokenizer(x,Weka_control(min=3,max=3))
+one_table<-TermDocumentMatrix(corpus6,control=list(tokenize=one))
+two_table<-TermDocumentMatrix(corpus6,control=list(tokenize=two))
+thr_table<-TermDocumentMatrix(corpus6,control=list(tokenize=thr))
+
+#Then we find the frequency of terms in each of these 3 matrices and construct dataframes of these frequencies.
+one_corpus<-findFreqTerms(one_table,lowfreq=1000)
+two_corpus<-findFreqTerms(two_table,lowfreq=80)
+thr_corpus<-findFreqTerms(thr_table,lowfreq=10)
+one_corpus_num<-rowSums(as.matrix(one_table[one_corpus,]))
+# One_corpus
+one_corpus_table<-data.frame(Word=names(one_corpus_num),frequency=one_corpus_num)
+one_corpus_sort<-one_corpus_table[order(-one_corpus_table$frequency),]
+head(one_corpus_sort)
+# Two_corpus
+two_corpus_num<-rowSums(as.matrix(two_table[two_corpus,]))
+two_corpus_table<-data.frame(Word=names(two_corpus_num),frequency=two_corpus_num)
+two_corpus_sort<-two_corpus_table[order(-two_corpus_table$frequency),]
+head(two_corpus_sort)
+# Three_corpus
+thr_corpus_num<-rowSums(as.matrix(thr_table[thr_corpus,]))
+thr_corpus_table<-data.frame(Word=names(thr_corpus_num),frequency=thr_corpus_num)
+thr_corpus_sort<-thr_corpus_table[order(-thr_corpus_table$frequency),]
+head(thr_corpus_sort)
+```
+
+## Results Visualizations
+
+The frequency distribution of each n-grams category will be visualized into 3 different bar plots
+
+```{r graphs}
+library(ggplot2)
+library(gridExtra)
+# 1-grams plot
+one_g<-ggplot(one_corpus_sort[1:10,],aes(x=reorder(Word,-frequency),y=frequency,fill=frequency))
+one_g<-one_g+geom_bar(stat="identity")
+one_g<-one_g+labs(title="Unigrams",x="Words",y="Frequency")
+one_g<-one_g+theme(axis.text.x=element_text(angle=90))
+# 2-grams plot
+two_g<-ggplot(two_corpus_sort[1:10,],aes(x=reorder(Word,-frequency),y=frequency,fill=frequency))
+two_g<-two_g+geom_bar(stat="identity")
+two_g<-two_g+labs(title="Bigrams",x="Words",y="Frequency")
+two_g<-two_g+theme(axis.text.x=element_text(angle=90))
+# 3-grams plot
+three_g<-ggplot(thr_corpus_sort[1:10,],aes(x=reorder(Word,-frequency),y=frequency,fill=frequency))
+three_g<-three_g+geom_bar(stat="identity")
+three_g<-three_g+labs(title="Trigrams",x="Words",y="Frequency")
+three_g<-three_g+theme(axis.text.x=element_text(angle=90))
+# Print the plots
+grid.arrange(one_g, two_g, three_g,ncol=3)
+```
+
+
+## Conclusion and Next Steps
+
+The next step will be to create a Shiny app and develop its user interface that will contain a text input box to accept text inputs. Then, a predictive algorithm will be built to take the user input and predict the next 1, 2 or 3 words based and these n-grams models we have built here. 
+Finally, a pitch about the app will be prepared to allow prospect users to navigate its interface intuitively. 
