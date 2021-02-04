@@ -129,7 +129,10 @@ thr<-function(x) NGramTokenizer(x,Weka_control(min=3,max=3))
 one_table<-TermDocumentMatrix(corpus6,control=list(tokenize=one))
 two_table<-TermDocumentMatrix(corpus6,control=list(tokenize=two))
 thr_table<-TermDocumentMatrix(corpus6,control=list(tokenize=thr))
-
+# Save the n-grams into .rds files
+saveRDS(one_table, file = "ng1.rds", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+saveRDS(two_table, file = "ng2.rds", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+saveRDS(thr_table, file = "ng3.rds", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
 #Then we find the frequency of terms in each of these 3 matrices and construct dataframes of these frequencies.
 one_corpus<-findFreqTerms(one_table,lowfreq=1000)
 two_corpus<-findFreqTerms(two_table,lowfreq=80)

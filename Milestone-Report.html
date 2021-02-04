@@ -488,7 +488,10 @@ thr&lt;-function(x) NGramTokenizer(x,Weka_control(min=3,max=3))
 one_table&lt;-TermDocumentMatrix(corpus6,control=list(tokenize=one))
 two_table&lt;-TermDocumentMatrix(corpus6,control=list(tokenize=two))
 thr_table&lt;-TermDocumentMatrix(corpus6,control=list(tokenize=thr))
-
+# Save the n-grams into .rds files
+saveRDS(one_table, file = &quot;ng1.rds&quot;, ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+saveRDS(two_table, file = &quot;ng2.rds&quot;, ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+saveRDS(thr_table, file = &quot;ng3.rds&quot;, ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
 #Then we find the frequency of terms in each of these 3 matrices and construct dataframes of these frequencies.
 one_corpus&lt;-findFreqTerms(one_table,lowfreq=1000)
 two_corpus&lt;-findFreqTerms(two_table,lowfreq=80)
